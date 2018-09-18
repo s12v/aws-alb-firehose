@@ -1,51 +1,82 @@
 package main
 
 import (
-	"errors"
+	"bufio"
+	"compress/gzip"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"io"
+	"log"
+	"strings"
 )
 
-var (
-	// DefaultHTTPGetAddress Default Address
-	DefaultHTTPGetAddress = "https://checkip.amazonaws.com"
-
-	// ErrNoIP No IP found in response
-	ErrNoIP = errors.New("No IP in HTTP response")
-
-	// ErrNon200Response non 200 status code in response
-	ErrNon200Response = errors.New("Non 200 Response found")
-)
-
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	resp, err := http.Get(DefaultHTTPGetAddress)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
-
-	if resp.StatusCode != 200 {
-		return events.APIGatewayProxyResponse{}, ErrNon200Response
-	}
-
-	ip, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
-
-	if len(ip) == 0 {
-		return events.APIGatewayProxyResponse{}, ErrNoIP
-	}
-
-	return events.APIGatewayProxyResponse{
-		Body:       fmt.Sprintf("Hello, %v", string(ip)),
-		StatusCode: 200,
-	}, nil
+type LogEntry struct {
+	Type      string `json:"type"`
+	Timestamp string `json:"@timestamp"`
+	Elb       string `json:"type"`
 }
 
+func handler(s3Event events.S3Event) (string, error) {
+
+	for i, rec := range s3Event.Records {
+		fmt.Print(i)
+		bucket := rec.S3.Bucket.Name
+		key := rec.S3.Object.Key
+		log.Printf("processing %v/%v", bucket, key)
+		readS3File(bucket, key)
+	}
+
+	return "boom", nil
+}
+
+func readS3File(bucket string, key string) {
+	cfg, _ := external.LoadDefaultAWSConfig()
+	s3svc := s3.New(cfg)
+	req := s3svc.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: &bucket,
+		Key:    &key,
+	})
+	resp, err := req.Send()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		gzReader, _ := gzip.NewReader(resp.Body)
+		br := bufio.NewReader(gzReader)
+		for {
+			line, err := br.ReadString('\n')
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				// boom
+			}
+			line = strings.Trim(line, "\n")
+			cols := strings.Split(line, " ")
+			logEntry := &LogEntry{
+				Type: cols[0],
+				Timestamp: cols[1],
+				Elb: cols[2],
+			}
+			fmt.Println(logEntry)
+		}
+	}
+}
+
+//func processLogFile(bucket string, key string) {
+//	req := s3svc.GetObjectRequest(&s3.GetObjectInput{
+//		Bucket: &bucket,
+//		Key:    &key,
+//	})
+//	resp, err := req.Send()
+//	if err == nil {
+//		fmt.Println(resp)
+//	}
+//}
+
 func main() {
+	//cfg, _ := external.LoadDefaultAWSConfig()
+	//s3svc = s3.New(cfg)
 	lambda.Start(handler)
 }
