@@ -1,4 +1,4 @@
-# Application load bakancer (ALB) to Kinesis Firehose lambda
+# Application load balancer (ALB) to Kinesis Firehose lambda
 
 Serverless function to stream access logs of Application ELB from S3 to Amazon Kinesis Firehose.
 
