@@ -15,7 +15,7 @@
   version = "v1.6.0"
 
 [[projects]]
-  digest = "1:88e127d6e7f1e6e957b741fb399a0fd5be8d6e55137495b03d4be4e202ef469f"
+  digest = "1:98614c788cbe7e975bbddaaf0e38f040b6feea27e26646619b0135df4ddb6ab5"
   name = "github.com/aws/aws-sdk-go-v2"
   packages = [
     "aws",
@@ -31,12 +31,15 @@
     "internal/awsutil",
     "internal/sdk",
     "private/protocol",
+    "private/protocol/json/jsonutil",
+    "private/protocol/jsonrpc",
     "private/protocol/query",
     "private/protocol/query/queryutil",
     "private/protocol/rest",
     "private/protocol/restxml",
     "private/protocol/xml",
     "private/protocol/xml/xmlutil",
+    "service/firehose",
     "service/s3",
     "service/sts",
   ]
@@ -65,7 +68,9 @@
   input-imports = [
     "github.com/aws/aws-lambda-go/events",
     "github.com/aws/aws-lambda-go/lambda",
+    "github.com/aws/aws-sdk-go-v2/aws",
     "github.com/aws/aws-sdk-go-v2/aws/external",
+    "github.com/aws/aws-sdk-go-v2/service/firehose",
     "github.com/aws/aws-sdk-go-v2/service/s3",
   ]
   solver-name = "gps-cdcl"

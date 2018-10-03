@@ -1,36 +1,70 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Streams ALB events from S3 to Kinesis Firehose
+  Serverless function to stream access logs of Application ELB from S3 to Amazon Kinesis Firehose.
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-Globals:
-  Function:
-    Timeout: 5
+  This SAM template creates the Lambda function & associated policy + IAM role, and new S3 bucket
+  with enabled events notifications to this Lambda function.
+
+  Send your ALB access logs to this newly created S3 Bucket. To enable access logging for ALB:
+  http://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html#enable-access-logging
+
+Parameters:
+  S3ALBLogsBucketName:
+    Type: String
+    Description: Name of S3 bucket that will store access logs
+  S3Prefix:
+    Type: String
+    Description: Optional prefix to limit the notifications to objects with keys that start with matching characters. e.g. uploadedImages/
+    Default: ""
+  S3Suffix:
+    Type: String
+    Description: Optional suffix to limit the notifications to objects with keys that end with matching characters. e.g. .log.gz
+    Default: ".log.gz"
+  DeliveryStreamName:
+    Type: String
+    Description: Kinesis Firehose delivery stream to sends logs to
 
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  AlbToKinesisFunction:
+    Type: AWS::Serverless::Function
     Properties:
-      CodeUri: hello-world/
-      Handler: hello-world
+      Description: Stream ALB events from S3 to Amazon Kinesis Firehose
+      CodeUri: aws-alb-firehose
+      Handler: aws-alb-firehose
       Runtime: go1.x
-      Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
-      Events:
-        CatchAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /hello
-            Method: GET
-      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+      MemorySize: 512
+      Timeout: 30
+      Policies:
+      - FirehoseWritePolicy:
+          DeliveryStreamName: !Ref DeliveryStreamName
+      - S3ReadPolicy:
+          BucketName: !Ref S3ALBLogsBucketName
+      Environment:
         Variables:
-          PARAM1: VALUE
+          DELIVERY_STREAM_NAME: !Ref DeliveryStreamName
+      Events:
+        LogUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref S3Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                - Name: prefix
+                  Value: !Sub "${S3Prefix}"
+                - Name: suffix
+                  Value: !Sub "${S3Suffix}"
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref S3ALBLogsBucketName
 
 Outputs:
-  AlbLogProcessor:
-    Description: "First Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  AlbToKinesisFunctionArn:
+    Description: The logs processor ARN
+    Value: !GetAtt AlbToKinesisFunction.Arn
+  S3Bucket:
+    Description: S3 Bucket for ALB access logs
+    Value: !Ref S3Bucket
