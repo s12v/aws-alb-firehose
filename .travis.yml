@@ -3,14 +3,8 @@ language: go
 go:
 - "1.11"
 
-cache: pip
-
 install:
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-- pip install aws-sam-cli
-
-before_script:
-- sam --version
 
 script:
 - make

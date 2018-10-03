@@ -1,5 +1,5 @@
 .PHONY: all
-all: deps clean test build samtest
+all: deps clean test build
 
 deps:
 	dep ensure -v
