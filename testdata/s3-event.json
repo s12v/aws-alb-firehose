@@ -1,0 +1,38 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.0",
+      "eventSource": "aws:s3",
+      "awsRegion": "eu-west-1",
+      "eventTime": "2018-09-18T21:40:01.936Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": {
+        "principalId": "AWS:AIDAIC3Q6OY7XTEX2MMHK"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "34.250.30.212"
+      },
+      "responseElements": {
+        "x-amz-request-id": "59EF888E94E819F3",
+        "x-amz-id-2": "e50dDr/SfRmtQuEi5VHNKpYv5XmttxRbzbFlX+UElECWnjDThcxH/ZF7zcexkONZtwYbJN2whX0="
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "f3cfcf8c-0a5f-45ad-a4d5-5e75d016a085",
+        "bucket": {
+          "name": "20180917-alb-test",
+          "ownerIdentity": {
+            "principalId": "A2JJ6Z8BLEIBEM"
+          },
+          "arn": "arn:aws:s3:::20180917-alb-test"
+        },
+        "object": {
+          "key": "AWSLogs/328305143014/elasticloadbalancing/eu-west-1/2018/09/18/328305143014_elasticloadbalancing_eu-west-1_app.test1.7f050ffab5373730_20180918T2140Z_54.154.241.129_y7cu9boq.log.gz",
+          "size": 1301,
+          "eTag": "8c0c39859c5c7bc2f0a51e74d188e279",
+          "sequencer": "005BA170B1CF10A194"
+        }
+      }
+    }
+  ]
+}

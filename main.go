@@ -1,51 +1,86 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-
+	"compress/gzip"
+	"encoding/csv"
+	"encoding/json"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"io"
+	"log"
+	"os"
 )
 
-var (
-	// DefaultHTTPGetAddress Default Address
-	DefaultHTTPGetAddress = "https://checkip.amazonaws.com"
+var s3Reader S3Reader
+var firehoseWriter FirehoseWriter
 
-	// ErrNoIP No IP found in response
-	ErrNoIP = errors.New("No IP in HTTP response")
+func handler(s3Event events.S3Event) error {
+	log.Print("handler()")
+	for _, rec := range s3Event.Records {
+		closer, err := s3Reader.readS3File(rec.S3.Bucket.Name, rec.S3.Object.Key)
+		if err != nil {
+			log.Printf("skip %v/%v, error: %v", rec.S3.Bucket.Name, rec.S3.Object.Key, err)
+			continue
+		}
+		logEntries, err := readLogEntries(closer)
+		if err != nil {
+			log.Printf("skip %v/%v, error: %v", rec.S3.Bucket.Name, rec.S3.Object.Key, err)
+			continue
+		}
 
-	// ErrNon200Response non 200 status code in response
-	ErrNon200Response = errors.New("Non 200 Response found")
-)
+		var records [][]byte
+		for _, l := range logEntries {
+			record, err := json.Marshal(l)
+			if err != nil {
+				log.Printf("drop entry %v, error: %v", l, err)
+				continue
+			}
+			records = append(records, record)
+			if len(records) == 500 {
+				firehoseWriter.write(records)
+				records = nil
+			}
+		}
 
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	resp, err := http.Get(DefaultHTTPGetAddress)
+		if records != nil {
+			firehoseWriter.write(records)
+		}
+	}
+
+	return nil
+}
+
+func readLogEntries(closer io.ReadCloser) (logEntries []*AlbLogEntry, err error) {
+	defer func() {
+		closer.Close()
+	}()
+
+	gzipReader, _ := gzip.NewReader(closer)
+	csvReader := csv.NewReader(gzipReader)
+	csvReader.Comma = ' '
+	records, err := csvReader.ReadAll()
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return
 	}
 
-	if resp.StatusCode != 200 {
-		return events.APIGatewayProxyResponse{}, ErrNon200Response
+	for _, r := range records {
+		logEntry, err := CreateLogEntry(r)
+		if err == nil {
+			logEntries = append(logEntries, logEntry)
+		} else {
+			log.Printf("drop entry %v, error: %v", r, err)
+		}
 	}
-
-	ip, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
-
-	if len(ip) == 0 {
-		return events.APIGatewayProxyResponse{}, ErrNoIP
-	}
-
-	return events.APIGatewayProxyResponse{
-		Body:       fmt.Sprintf("Hello, %v", string(ip)),
-		StatusCode: 200,
-	}, nil
+	return
 }
 
 func main() {
+	log.Print("main()")
+	deliveryStreamName := os.Getenv("DELIVERY_STREAM_NAME")
+	log.Printf("stream name: %v", deliveryStreamName)
+	awsConfig, _ := external.LoadDefaultAWSConfig()
+	s3Reader = NewDefaultS3Reader(awsConfig)
+	firehoseWriter = NewDefaultFirehoseWriter(awsConfig, deliveryStreamName)
 	lambda.Start(handler)
 }
