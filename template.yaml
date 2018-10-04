@@ -1,12 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Serverless function to stream access logs of Application ELB from S3 to Amazon Kinesis Firehose.
+  Serverless function to stream access logs of Application Load Balancer (ALB) from S3 to Amazon Kinesis Firehose.
 
-  This SAM template creates the Lambda function & associated policy + IAM role, and new S3 bucket
-  with enabled events notifications to this Lambda function.
+  This SAM template creates the Lambda function, IAM role, and new S3 bucket with enabled events notifications to this Lambda function.
 
-  Send your ALB access logs to this newly created S3 Bucket. To enable access logging for ALB:
+  You will need to send your ALB access logs to this newly created S3 Bucket. To enable access logging for ALB:
   http://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html#enable-access-logging
 
 Parameters:
