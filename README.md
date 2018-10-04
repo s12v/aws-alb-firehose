@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.com/s12v/aws-alb-firehose.svg?branch=master)](https://travis-ci.com/s12v/aws-alb-firehose)
+[![codecov](https://codecov.io/gh/s12v/aws-alb-firehose/branch/master/graph/badge.svg)](https://codecov.io/gh/s12v/aws-alb-firehose)
+
 # Application load balancer (ALB) to Kinesis Firehose lambda
 
 Serverless function to stream access logs of Application ELB from S3 to Amazon Kinesis Firehose.
