@@ -1,5 +1,6 @@
 aws-alb-firehose
 coverage.txt
+main
 packaged.yaml
 vendor
 
