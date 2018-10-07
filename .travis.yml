@@ -11,3 +11,15 @@ script:
 
 after_success:
 - bash <(curl -s https://codecov.io/bash)
+
+before_deploy:
+- mv ./main "main-v$TRAVIS_TAG"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: O5XmJq8AC6ofZHhmfj+k7aYCPTSV6Z3uokjQg0ApL4RXrq/Cbz3k4/Yev0a5o11W+O8W+LrD+1dmEpzICPtkrlfwMJe0t7Js408YDagk28DAUwcer7Mxi/X7OTZ2UTjBNck5g5EvOoHCnRBiJEEt6fM+9EAQmflor8vOsjtt1Z2kYp6l8ZRoVeJA4egyS/9kQYcUqvLHXshHrT3Gjv7pSaJqmYv9x5VAHeQiMIf3x8rAF12crmZGiF9xUi1xdt27uP/7I47MD5VeNdygVc56ZCUnJYlcPBH2C1Vx5s7U68fDFi6Xj+/FDQk0GMbEJ+AAn6PEW1hYrGOKzQr5mpCdpm31J/N0x+hSJtn7HtK2bt3aROoGSFAnl/+CZzh8+9tocEjqfvGLtOS2JY0EEa8i4BJtxBBAQT39je660f15jLHMMtn8VOA7QqHih5iqvRiRFjMD22cWJ4chXV96FjDvgM2Y9Ey3gXnXb3FO5ak+xI0hRn1jZCcZydTNMJA4DNYqgLPLWfGvSeiiwvfRlzRHiAfeAM3F6ZdnEK7ez24lxBOZwImLpljXt20964Ni+AV7FTLWDTQ4OdZixOYqR34VMrArhqNVxLJUuytjnWZxb4o9dSpuAFfME7MBIepK9AquB01TTpPu1pbRa5rYUfiHZf7WbPbYz4e2owMXs7t3KE0=
+  file: "main-v$TRAVIS_TAG"
+  on:
+  repo: s12v/aws-alb-firehose
+    tags: true
